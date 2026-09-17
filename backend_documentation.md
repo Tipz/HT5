@@ -102,6 +102,7 @@ Content-Type: application/json
 ```powershell
 Copy-Item .env.example .env
 # Заменить POSTGRES_PASSWORD в .env.
+# Для локального http://localhost:8080 установить SECURE_COOKIES=false.
 docker compose up --build
 ```
 
@@ -109,7 +110,49 @@ Compose сначала ждёт PostgreSQL, запускает одноразо�
 приложение на `http://localhost:8080`. Volume `together-postgres` сохраняет БД, а
 `together-data-protection` — ключи шифрования cookie между перезапусками.
 
-Запуск без Docker при доступном PostgreSQL:
+## Готовый образ и перенос на другую инфраструктуру
+
+Workflow `.github/workflows/publish-container.yml` публикует публичный OCI-образ:
+
+```text
+ghcr.io/tipz/ht5
+```
+
+Manifest содержит `linux/amd64` и `linux/arm64`. Push в `master` обновляет теги
+`latest`, `master` и `sha-<короткий SHA>`; Git-тег `v*` создаёт одноимённый тег
+образа. `latest` изменяемый, поэтому production-развёртывание следует закреплять
+за release- или SHA-тегом.
+
+Образ включает `Together.Api` и опубликованный `Together.Client`, слушает порт
+`8080` и запускается от непривилегированного пользователя `app`. Перед основным
+приложением оркестратор должен один раз запустить тот же образ с аргументом
+`--migrate`. Одновременный запуск миграции несколькими репликами не предусмотрен.
+
+| Параметр | Назначение |
+| --- | --- |
+| `ConnectionStrings__Together` | Обязательная строка подключения к PostgreSQL из secret store |
+| `DataProtection__KeysPath=/app/data-protection` | Каталог ключей cookie; должен находиться на постоянном volume |
+| `Authentication__SecureCookies=true` | Обязательное значение за production HTTPS reverse proxy |
+| `ASPNETCORE_ENVIRONMENT=Production` | Production-окружение ASP.NET Core |
+
+`/health` подтверждает работу процесса, а `/health/ready` дополнительно проверяет
+PostgreSQL. TLS завершается внешним reverse proxy или ingress; hostname, сертификат,
+доверенные proxy-сети и число реплик зависят от целевой инфраструктуры и в образ не
+зашиты. При нескольких репликах каталог Data Protection должен быть общим.
+
+Для получения образа без сборки исходников:
+
+```bash
+docker pull ghcr.io/tipz/ht5:latest
+```
+
+Секреты нельзя передавать как Docker build arguments или сохранять в образе. Для
+приватной копии пакета целевой хост должен выполнить `docker login ghcr.io` с
+минимальным правом `read:packages`; текущий пакет `Tipz/HT5` доступен публично.
+
+## Запуск из исходников без Docker
+
+При доступном PostgreSQL:
 
 ```powershell
 $env:ConnectionStrings__Together = 'Host=localhost;Port=5432;Database=together;Username=together;Password=...'
@@ -137,17 +180,34 @@ docker compose exec -T database pg_dump -U together -d together -Fc > together.b
 
 ```text
 dotnet build Together.slnx -c Release              — успешно, 0 ошибок, 0 предупреждений
-dotnet test Together.slnx -c Release               — успешно, API 4/4, Core/UI 32/32
+dotnet test tests/Together.Tests -c Release        — успешно, Core/UI 32/32
+dotnet test tests/Together.Api.Tests -c Release    — успешно, API 4/4
 dotnet ef migrations has-pending-model-changes     — изменений модели нет
 docker compose up --build -d                       — успешно на Linux-ВМ, Compose 2.39.1
 GET /health/ready                                  — Healthy
 Playwright --backend-smoke                         — Chromium, успешно
+GitHub Actions CI                                  — Release build, Core/UI 32/32, API 4/4
+GitHub Actions Backend browser smoke               — Compose + PostgreSQL + Chromium, успешно
+GitHub Actions Publish container image             — GHCR, AMD64/ARM64, успешно
 ```
 
 На стенде подтверждены регистрация и cookie-вход, создание и чтение поездки,
 создание варианта с расходами `0` и `null`, конфликт revision, изоляция владельцев,
 выход и сохранение данных после перезагрузки страницы. HTTPS reverse proxy и
 публичный production-домен в рамках локальной проверки не разворачивались.
+
+## Автоматизация GitHub
+
+Все workflow поддерживают ручной запуск (`workflow_dispatch`):
+
+| Workflow | Автоматический запуск | Результат |
+| --- | --- | --- |
+| `.github/workflows/ci.yml` | push и pull request в `master` | Restore, Release-сборка, xUnit/bUnit и API-тесты, TRX artifact |
+| `.github/workflows/browser-tests.yml` | push и pull request в `master` | Compose-стенд, миграция, PostgreSQL, Chromium backend smoke, evidence и логи |
+| `.github/workflows/publish-container.yml` | push в `master` и теги `v*` | Multi-platform image, OCI metadata, provenance, SBOM и Buildx cache |
+
+Публикация использует автоматически выдаваемый `GITHUB_TOKEN` только с правами
+`contents: read` и `packages: write`; персональный токен в репозитории не нужен.
 
 ## Использование AI
 

@@ -1,5 +1,9 @@
 # Применение промпт-шаблонов из ДЗ 2
 
+> **Исторический документ.** Эти шаблоны описывают frontend-этап ДЗ № 4.
+> Актуальная архитектура ДЗ № 5 дополнена `Together.Api`, `Together.Contracts`,
+> PostgreSQL и CI/CD; рабочие правила приведены в [AGENTS.md](../AGENTS.md).
+
 Источник: соседний учебный репозиторий HT2, файл Отчет/prompt_templates.md.
 Сохранена структура RTCF: Role, Task, Context, Format. Серверный контекст
 Home Services Dashboard заменён на standalone Blazor WebAssembly и IndexedDB.
@@ -11,7 +15,7 @@ Home Services Dashboard заменён на standalone Blazor WebAssembly и Ind
 
 - **Role:** архитектор C# / Blazor WebAssembly.
 - **Task:** разделить модель, UI и хранение по требованиям US-01–US-10.
-- **Context:** docs/technical_specification.md, выбранная концепция 3. Серверного API нет.
+- **Context:** docs/technical_specification.md, выбранная концепция 3; на этапе ДЗ № 4 серверного API ещё нет.
 - **Format:** готовые проекты Core и Client, проверяемая сборка, явные зависимости.
 
 Результат: Together.Core с моделью и валидацией; Together.Client с компонентами и JS-адаптером IndexedDB.

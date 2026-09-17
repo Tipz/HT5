@@ -12,13 +12,23 @@ ASP.NET Core API и PostgreSQL. Реализованы регистрация, c
 ```powershell
 Copy-Item .env.example .env
 # Укажите длинный случайный POSTGRES_PASSWORD в .env
+# Для локального http://localhost:8080 установите SECURE_COOKIES=false
 docker compose up --build
 ```
 
 После успешной миграции приложение доступно на `http://localhost:8080`. Файл `.env`
 исключён из Git; секреты нельзя добавлять в `appsettings.json` или Blazor bundle.
-`SECURE_COOKIES=true` оставляйте для production и HTTPS. Значение `false` допустимо
-только для изолированного HTTP-стенда в локальной сети.
+`SECURE_COOKIES=true` оставляйте для production и HTTPS. Значение `false` необходимо
+для локального `http://localhost:8080` и допустимо только на изолированном стенде.
+
+Готовый multi-platform образ публикуется в GitHub Container Registry:
+
+```text
+ghcr.io/tipz/ht5:latest
+```
+
+`latest` следует за веткой `master`; для воспроизводимого production-деплоя
+используйте release-тег `v*` или неизменяемый тег `sha-*`.
 
 Адаптивное приложение для сравнения семейных поездок по бюджету, дороге и удобствам для детей.
 Frontend создан в ДЗ № 4 по [исходному ТЗ](docs/technical_specification.md) и расширен backend в ДЗ № 5.
@@ -51,7 +61,7 @@ Node.js и npm для сборки и запуска не нужны.
 Для запуска без Docker сначала подготовьте PostgreSQL и примените миграцию, затем из корня репозитория в двух терминалах:
 
 ```powershell
-dotnet restore Together.slnx --locked-mode
+dotnet restore Together.slnx
 dotnet tool restore
 dotnet tool run dotnet-ef database update --project src/Together.Api
 dotnet run --project src/Together.Api
@@ -75,67 +85,65 @@ dotnet watch --project src/Together.Client
 
 ```powershell
 dotnet build Together.slnx -c Release
-dotnet test Together.slnx -c Release
+dotnet test tests/Together.Tests/Together.Tests.csproj -c Release
+dotnet test tests/Together.Api.Tests/Together.Api.Tests.csproj -c Release
 dotnet run --project tests/Together.BrowserTests -- --install
 ```
 
-Установщик загружает отдельные Chromium и Firefox для автоматических тестов.
-
-При работающем приложении на localhost:5180 запустите в другом терминале:
-
-```powershell
-dotnet run --project tests/Together.BrowserTests
-```
-
-Браузерные тесты создают изолированные профили, используют вымышленные данные,
-проверяют оба движка и возвращают ненулевой код при ошибке.
-Не запускайте несколько копий набора одновременно: они записывают одни и те же файлы отчёта.
-
-Результаты и скриншоты: [docs/evidence](docs/evidence/).
-Итог для ДЗ № 5: 32 модульных/компонентных и 4 API-теста прошли; Compose с
-PostgreSQL и отдельный backend smoke-сценарий Chromium проверены на Linux-ВМ.
-Существующие 22 браузерных сценария относятся к IndexedDB-версии ДЗ № 4.
-Описание проверок, найденных дефектов и ограничений: [development_report.md](development_report.md).
-
-Дополнительные команды в PowerShell:
+Актуальный end-to-end сценарий ДЗ № 5 выполняется на полном Compose-стенде с
+PostgreSQL. После `docker compose up --build -d` запустите:
 
 ```powershell
-# Только отдельные сценарии:
-$env:TEST_FILTER = 'keyboard,storage-failure'
-dotnet run --project tests/Together.BrowserTests
-Remove-Item Env:TEST_FILTER
-
-# Проверка CSS hot reload; в первом терминале должен работать dotnet watch:
-dotnet run --project tests/Together.BrowserTests -- --hot-reload
-
-# Сквозная проверка опубликованного backend/frontend стенда:
 $env:APP_URL = 'http://localhost:8080'
 dotnet run --project tests/Together.BrowserTests -- --backend-smoke
 Remove-Item Env:APP_URL
 ```
 
-## Сборка для размещения
+Сценарий Chromium проверяет регистрацию, загрузку серверного примера, сохранение
+после перезагрузки и выход. Он использует вымышленные данные и возвращает ненулевой
+код при ошибке. Не запускайте несколько копий одновременно: они записывают одни и
+те же файлы отчёта.
 
-```powershell
-dotnet publish src/Together.Client -c Release -o artifacts/publish
+Результаты и скриншоты: [docs/evidence](docs/evidence/).
+Итог для ДЗ № 5: 32 модульных/компонентных и 4 API-теста прошли; Compose с
+PostgreSQL и отдельный backend smoke-сценарий Chromium проверены на Linux-ВМ.
+Существующий двухбраузерный набор без `--backend-smoke` относится к исторической
+IndexedDB-версии ДЗ № 4 и не является проверкой текущего backend.
+Описание проверок, найденных дефектов и ограничений: [development_report.md](development_report.md).
+
+GitHub автоматически выполняет:
+
+- [CI](.github/workflows/ci.yml) — Release-сборку и оба xUnit-проекта;
+- [Backend browser smoke](.github/workflows/browser-tests.yml) — Compose, PostgreSQL и Playwright Chromium;
+- [Publish container image](.github/workflows/publish-container.yml) — публикацию AMD64/ARM64-образа в GHCR.
+
+## Развёртывание готового образа
+
+```bash
+docker pull ghcr.io/tipz/ht5:latest
 ```
 
-Результат — статические файлы в artifacts/publish/wwwroot. Для размещения нужен HTTP(S)-хостинг с поддержкой MIME application/wasm.
-Сборка не требует wasm-tools; без этой необязательной нагрузки SDK сообщает о пропуске дополнительных оптимизаций WebAssembly.
+Образ содержит API и опубликованный Blazor-клиент, слушает HTTP-порт `8080` и
+работает от пользователя `app`. Для запуска требуются:
 
-Для локальной проверки опубликованных файлов предусмотрен **тестовый** статический сервер:
+- `ConnectionStrings__Together` — строка подключения к PostgreSQL;
+- отдельный одноразовый запуск того же образа с аргументом `--migrate` до старта приложения;
+- постоянный volume для `/app/data-protection` и значение
+  `DataProtection__KeysPath=/app/data-protection`;
+- HTTPS reverse proxy и `Authentication__SecureCookies=true` в production.
 
-```powershell
-dotnet run --project tests/Together.BrowserTests -- --serve-published
-```
+Проверки состояния: `/health` — доступность процесса, `/health/ready` — готовность
+с подключением к PostgreSQL. Пароли и строку подключения передавайте через secret
+store целевой инфраструктуры, а не через Docker build arguments или образ.
 
-Откройте http://localhost:5181. Для браузерной проверки этой сборки в отдельном терминале:
+Workflow публикует:
 
-```powershell
-$env:APP_URL = 'http://localhost:5181'
-dotnet run --project tests/Together.BrowserTests --no-build
-Remove-Item Env:APP_URL
-```
+- `latest` и `master` при push в `master`;
+- `sha-<короткий SHA>` для каждого опубликованного коммита;
+- `v*` при создании соответствующего Git-тега.
+
+Подробности локального Compose-запуска, миграций и резервного копирования приведены
+в [документации backend](backend_documentation.md).
 
 ## Структура
 
@@ -147,10 +155,10 @@ Remove-Item Env:APP_URL
 | src/Together.Contracts | DTO и маршруты API |
 | src/Together.Api | Identity, HTTP API, EF Core и миграции PostgreSQL |
 | src/Together.Client/Storage | API-клиент и адаптер старой IndexedDB для импорта |
-| src/Together.Client/wwwroot/js | Транзакции и управление диалогом |
+| src/Together.Client/wwwroot/js | Доступ к старой IndexedDB для импорта и управление диалогом |
 | tests/Together.Tests | Модульные и компонентные тесты |
 | tests/Together.Api.Tests | Интеграционные тесты API и изоляции пользователей |
-| tests/Together.BrowserTests | Сценарии двух браузеров, mock-данные, измерения, статический preview |
+| tests/Together.BrowserTests | Актуальный backend smoke и исторические IndexedDB-сценарии ДЗ № 4 |
 | docs | Исходное ТЗ, концепции, план и доказательства проверок |
 
 Зависимости закреплены в .csproj и packages.lock.json.
@@ -170,14 +178,16 @@ API проверяет revision и возвращает `409`, если запи
 
 - [Документация backend](backend_documentation.md)
 - [Требования ДЗ № 5](docs/backend_requirements.md)
-- [Материалы ДЗ № 4](SUBMISSION.md)
+- [Материалы сдачи ДЗ № 5](SUBMISSION.md)
 - [Отчёт о разработке ДЗ № 4](development_report.md)
 - [Адаптированные промпт-шаблоны ДЗ 2](docs/prompt_templates.md)
 - [Правила работы агента](AGENTS.md)
 - [Результаты браузерных тестов](docs/evidence/browser-results.json)
 - [Измерения производительности](docs/evidence/performance.json)
 
-Материалы подготовлены для сдачи. Пользователь самостоятельно публикует репозиторий на GitHub и предоставляет его ссылку.
+Репозиторий опубликован на [GitHub](https://github.com/Tipz/HT5), готовый образ —
+в [GitHub Container Registry](https://github.com/Tipz/HT5/pkgs/container/ht5).
+Публичный HTTPS-стенд в рамках репозитория не разворачивается.
 
 ## Использованная документация
 

@@ -11,6 +11,8 @@ ASP.NET Core Minimal API, данные — PostgreSQL через EF Core/Npgsql.
 | Код backend и frontend | `src/Together.Api`, `src/Together.Client`, `src/Together.Core`, `src/Together.Contracts` |
 | Миграции БД | `src/Together.Api/Data/Migrations` и `database/migrations.sql` |
 | Docker-конфигурация | `Dockerfile`, `database/Dockerfile`, `docker-compose.yml`, `.env.example` |
+| GitHub Actions | `.github/workflows/ci.yml`, `.github/workflows/browser-tests.yml`, `.github/workflows/publish-container.yml` |
+| Готовый контейнер | `ghcr.io/tipz/ht5` для `linux/amd64` и `linux/arm64` |
 | Аутентификация и доступ | ASP.NET Core Identity, HttpOnly cookie, проверка владельца поездки |
 | API и примеры запросов | [backend_documentation.md](backend_documentation.md) |
 | Требования и архитектурное решение | [docs/backend_requirements.md](docs/backend_requirements.md) |
@@ -23,6 +25,7 @@ ASP.NET Core Minimal API, данные — PostgreSQL через EF Core/Npgsql.
 ```powershell
 Copy-Item .env.example .env
 # Заменить POSTGRES_PASSWORD в .env
+# Для локального HTTP-стенда установить SECURE_COOKIES=false
 docker compose up --build
 ```
 
@@ -41,6 +44,11 @@ docker compose up --build
   `null`, `409` для устаревшей revision, `404` для чужой записи и `401` после выхода.
 - Chromium end-to-end: регистрация через UI, серверный пример из трёх вариантов,
   восстановление после перезагрузки и выход — успешно.
+- GitHub Actions CI и Compose/Chromium smoke — успешно.
+- Публичный GHCR-образ собран для AMD64/ARM64; доступны теги `latest`, `master`,
+  `sha-*` и release-теги `v*`.
 
-Перед окончательной сдачей остаётся развернуть HTTPS reverse proxy и указать
-фактические ссылки на GitHub и публичный деплой.
+Исходники опубликованы в [репозитории GitHub](https://github.com/Tipz/HT5), образ —
+в [GitHub Container Registry](https://github.com/Tipz/HT5/pkgs/container/ht5).
+Вне текущей сдачи остаётся только публичный работающий стенд с HTTPS reverse proxy;
+готовый образ уже можно развернуть на другой инфраструктуре.

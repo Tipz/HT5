@@ -77,7 +77,7 @@ public sealed class TripsApiTests(TogetherApiFactory factory) : IClassFixture<To
 
     private static async Task RegisterAndLogin(HttpClient client, string email)
     {
-        const string password = "Strongpass123";
+        const string password = "12345";
         using var register = await client.PostAsJsonAsync($"{ApiRoutes.Auth}/register", new { email, password });
         Assert.Equal(HttpStatusCode.OK, register.StatusCode);
         using var login = await client.PostAsJsonAsync($"{ApiRoutes.Auth}/login?useCookies=true", new { email, password });

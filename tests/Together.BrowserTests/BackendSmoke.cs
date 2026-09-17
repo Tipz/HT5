@@ -32,7 +32,7 @@ public static class BackendSmoke
                 .ToBeVisibleAsync(new() { Timeout = 60_000 });
             await page.GetByRole(AriaRole.Button, new() { Name = "Создать аккаунт", Exact = true }).ClickAsync();
             await page.GetByLabel("Email").FillAsync($"browser-{Guid.NewGuid():N}@example.test");
-            await page.GetByLabel("Пароль").FillAsync("Strongpass123");
+            await page.GetByLabel("Пароль").FillAsync("12345");
             await page.GetByRole(AriaRole.Button, new() { Name = "Создать аккаунт", Exact = true }).ClickAsync();
 
             await Expect(page.GetByRole(AriaRole.Heading, new() { Name = "Все варианты. Все расходы." }))

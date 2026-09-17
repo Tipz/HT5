@@ -10,7 +10,7 @@
         <EditForm Model="model" OnValidSubmit="Submit">
             <DataAnnotationsValidator />
             <MudTextField @bind-Value="model.Email" Label="Email" InputType="InputType.Email" Required="true" Disabled="busy" />
-            <MudTextField @bind-Value="model.Password" Label="Пароль" InputType="InputType.Password" Required="true" Disabled="busy" HelperText="Не менее 10 символов" />
+            <MudTextField @bind-Value="model.Password" Label="Пароль" InputType="InputType.Password" Required="true" Disabled="busy" HelperText="Не менее 5 символов" />
             @if (error is not null) { <MudAlert Severity="Severity.Error">@error</MudAlert> }
             <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary" Variant="MudBlazor.Variant.Filled" Disabled="busy">@(busy ? "Подождите…" : register ? "Создать аккаунт" : "Войти")</MudButton>
         </EditForm>

@@ -100,6 +100,9 @@ textarea { resize:vertical; }
 .form-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; border-top:1px solid var(--line); padding-top:18px; }
 .budget-preview { background:var(--bg); padding:16px; border-radius:6px; font-size:12px; margin:14px 0; }
 .boot { text-align:center; padding:100px 24px; font-size:22px; }
+.auth-page { min-height:100dvh; display:grid; place-items:center; padding:24px; background:var(--bg); }
+.auth-card { width:min(100%,430px); display:grid; gap:16px; }
+.auth-card form { display:grid; gap:16px; }
 #blazor-error-ui { display:none; position:fixed; bottom:0; width:100%; background:#fff0ed; color:#922319; padding:20px; z-index:9999; }
 .skip-link { position:fixed; top:-100px; z-index:100; background:#fff; padding:12px; }
 .skip-link:focus { top:0; }

@@ -287,6 +287,9 @@
           "Microsoft.JSInterop": "10.0.10"
         }
       },
+      "together.contracts": {
+        "type": "Project"
+      },
       "together.core": {
         "type": "Project"
       }

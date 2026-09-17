@@ -9,13 +9,18 @@ namespace Together.Client.Pages;
 
 public partial class Home
 {
-    [Inject] public BrowserStore Store { get; set; } = default!;
+    [Inject] public ApiTripStore Store { get; set; } = default!;
+    [Inject] public NavigationManager Navigation { get; set; } = default!;
+    [Inject] public AuthClient Auth { get; set; } = default!;
+    [Inject] public BrowserStore LegacyStore { get; set; } = default!;
     [Inject] public IJSRuntime Js { get; set; } = default!;
     private Workspace data = new();
     private Guid? currentId;
     private Trip? Current => data.Trips.FirstOrDefault(t => t.Id == currentId);
     private bool HasExample => data.Trips.Any(t => t.Name == ExampleData.TripName);
     private bool loading = true, readFailed, busy, conflict;
+    private bool legacyAvailable, legacyReadFailed;
+    private Workspace? legacyData;
     private string? editor, error, success;
     private Trip? editingTrip;
     private TripVariant? editingVariant;
@@ -32,13 +37,26 @@ public partial class Home
         try
         {
             var loaded = await Store.ReadAsync();
-            if (loaded.Trips.Count == 0)
+            try
+            {
+                legacyData = await LegacyStore.ReadAsync();
+                legacyAvailable = legacyData.Trips.Count > 0;
+            }
+            catch (Exception ex) when (ex is JSException or JsonException or InvalidOperationException)
+            {
+                legacyReadFailed = true;
+            }
+            if (loaded.Trips.Count == 0 && !legacyAvailable)
                 loaded = await AddExampleData(loaded);
             data = loaded;
             if (!data.Trips.Any(t => t.Id == currentId))
                 currentId = data.Trips.FirstOrDefault()?.Id;
         }
-        catch (Exception ex) when (ex is JSException or JsonException or InvalidOperationException)
+        catch (AuthenticationRequiredException)
+        {
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception ex) when (ex is JSException or JsonException or InvalidOperationException or HttpRequestException)
         {
             readFailed = true;
         }
@@ -145,7 +163,12 @@ public partial class Home
             retry = null;
             return true;
         }
-        catch (Exception ex) when (ex is JSException or JsonException or InvalidOperationException)
+        catch (AuthenticationRequiredException)
+        {
+            Navigation.NavigateTo("/login");
+            return false;
+        }
+        catch (Exception ex) when (ex is JSException or JsonException or InvalidOperationException or HttpRequestException)
         {
             error = "Не удалось сохранить данные в этом браузере";
             return false;
@@ -235,6 +258,40 @@ public partial class Home
             comparisonKey++;
     }
     private Task Retry() => retry?.Invoke() ?? Task.CompletedTask;
+    private async Task ImportLegacy()
+    {
+        if (legacyData is null || busy || !await Js.InvokeAsync<bool>("confirm", "Импортировать локальные поездки в вашу учётную запись? Локальная копия останется в браузере."))
+            return;
+        busy = true;
+        error = null;
+        try
+        {
+            foreach (var source in legacyData.Trips)
+            {
+                if (data.Trips.Any(x => x.Id == source.Id))
+                    continue;
+                var next = data.Copy();
+                next.Trips.Add(source.Copy());
+                var result = await Store.WriteAsync(next, data.Revision, source.Id);
+                if (result != "ok")
+                    throw new InvalidOperationException("Импорт остановлен. Уже импортированные поездки сохранены, локальная копия не удалена.");
+                data = next;
+            }
+            legacyAvailable = false;
+            currentId ??= data.Trips.FirstOrDefault()?.Id;
+            success = "Локальные поездки импортированы. Исходная копия оставлена в браузере.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
+        {
+            error = ex.Message;
+        }
+        finally { busy = false; }
+    }
+    private async Task Logout()
+    {
+        try { await Auth.LogoutAsync(); }
+        finally { Navigation.NavigateTo("/login", forceLoad: true); }
+    }
     private async Task ReloadCurrent()
     {
         if (editor is not null && !await Js.InvokeAsync<bool>("confirm", "Загрузить актуальные данные и отбросить несохранённые правки?"))
@@ -253,7 +310,11 @@ public partial class Home
             if (!data.Trips.Any(t => t.Id == currentId))
                 currentId = data.Trips.FirstOrDefault()?.Id;
         }
-        catch (Exception ex) when (ex is JSException or JsonException or InvalidOperationException)
+        catch (AuthenticationRequiredException)
+        {
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception ex) when (ex is JSException or JsonException or InvalidOperationException or HttpRequestException)
         {
             error = "Не удалось прочитать актуальные данные. Правки остаются в форме.";
         }

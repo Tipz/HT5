@@ -2,7 +2,7 @@
 <PageTitle>Вместе в путь — план поездки</PageTitle>
 <a class="skip-link" href="#main">К содержимому</a>
 <div class="shell">
-    <header><a href="./" class="brand" aria-label="Вместе в путь, главная">вместе<span> / </span>в путь</a><span class="header-note">Семейный планировщик<br />Данные введены вручную</span></header>
+    <header><a href="./" class="brand" aria-label="Вместе в путь, главная">вместе<span> / </span>в путь</a><span class="header-note">Семейный планировщик<br />Данные введены вручную</span><MudButton OnClick="Logout" Variant="MudBlazor.Variant.Text">Выйти</MudButton></header>
     <aside class="sidebar" aria-label="Разделы"><div class="eyebrow">Мой план</div><a href="#comparison">Сравнение</a><a href="#options">Варианты · @(Current?.Variants.Count ?? 0)</a><a href="#help">О приложении</a><p class="note">Важные детали.<br />Обдуманный выбор.<br />Всё в одном месте.</p></aside>
     <main id="main">
         <section class="intro"><div class="eyebrow">План поездки</div><h1 tabindex="-1">Все варианты.<br />Все расходы.</h1><p>Сравните направления и жильё по бюджету, дороге и семейным удобствам.</p></section>
@@ -12,6 +12,8 @@
         { <div class="panel empty"><MudAlert Severity="Severity.Error">Не удалось прочитать данные. Хранилище недоступно, повреждено или имеет несовместимую версию. Исходные данные не изменены.</MudAlert><MudButton OnClick="Load" Color="Color.Primary">Повторить</MudButton></div> }
         else
         {
+            @if (legacyAvailable) { <MudAlert Severity="Severity.Info">Найдены поездки из локальной версии ДЗ № 4. Они не отправлены на сервер.<MudButton OnClick="ImportLegacy" Disabled="busy">Импортировать</MudButton></MudAlert> }
+            @if (legacyReadFailed) { <MudAlert Severity="Severity.Warning">Локальное хранилище ДЗ № 4 не удалось прочитать. Оно не очищено и не изменено.</MudAlert> }
             <div class="feedback" role="status" aria-live="polite">@(busy ? "Сохраняем…" : success)</div>
             @if (error is not null && editor is null) { @StorageError }
             @if (Current is not null)
@@ -33,7 +35,7 @@
             else
             { <section class="panel empty first-trip"><div class="empty-symbol" aria-hidden="true">＋</div><h2>Создайте первую поездку</h2><p>Задайте даты и состав семьи, затем добавьте варианты для сравнения.</p><MudButton OnClick="NewTrip" Variant="MudBlazor.Variant.Filled" Color="Color.Primary">Создать поездку</MudButton></section> }
         }
-        <footer id="help"><strong>Планируйте вместе, выбирайте сами.</strong><p>@Catalog.LocalNotice.</p><details><summary>Как пользоваться</summary><p>Создайте поездку, добавьте предложения, заполните расходы. Отметьте «Сравнить» у двух или более карточек и выберите критерии. Все суммы вводятся в рублях за семью за весь период. Цены не обновляются автоматически.</p><p>Поездки доступны на этом адресе в этом профиле браузера. Перенос между устройствами и восстановление после очистки данных не предусмотрены.</p></details></footer>
+        <footer id="help"><strong>Планируйте вместе, выбирайте сами.</strong><p>@Catalog.LocalNotice.</p><details><summary>Как пользоваться</summary><p>Создайте поездку, добавьте предложения, заполните расходы. Отметьте «Сравнить» у двух или более карточек и выберите критерии. Все суммы вводятся в рублях за семью за весь период. Цены не обновляются автоматически.</p><p>Поездки доступны после входа в вашу учётную запись, в том числе с другого устройства.</p></details></footer>
     </main>
 </div>
 @if (editor == "trip")

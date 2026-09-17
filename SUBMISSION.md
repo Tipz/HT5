@@ -1,39 +1,42 @@
-# Материалы домашнего задания №4
+# Материалы домашнего задания № 5
 
-Репозиторий: https://github.com/Tipz/HT4
+Проект «Вместе в путь» — клиент-серверное приложение для сравнения вариантов
+семейной поездки. Frontend реализован на Blazor WebAssembly и MudBlazor, backend —
+ASP.NET Core Minimal API, данные — PostgreSQL через EF Core/Npgsql.
 
-Проект «Вместе в путь» — адаптивное frontend-приложение для сравнения вариантов
-семейной поездки. Реализовано на C# / .NET 10, Blazor WebAssembly и MudBlazor.
-Приложение поддерживает параметры поездки, варианты жилья и направлений, бюджет
-по шести статьям, сравнение по семи критериям и локальное хранение в IndexedDB.
-
-Локальный запуск:
-
-```powershell
-git clone https://github.com/Tipz/HT4.git
-cd HT4
-dotnet restore Together.slnx --locked-mode
-dotnet run --project src/Together.Client
-```
-
-После запуска открыть http://localhost:5180. В пустом профиле появится вымышленный
-пример; при наличии сохранённых поездок его можно добавить кнопкой «Добавить пример».
-
-Отчёт о разработке: [development_report.md](development_report.md).
-Исходное ТЗ: [docs/technical_specification.md](docs/technical_specification.md).
-Результаты проверок: [docs/evidence](docs/evidence/).
-
-## Соответствие формату задания
+## Состав сдачи
 
 | Требование | Материал |
 | --- | --- |
-| Репозиторий с кодом | https://github.com/Tipz/HT4 |
+| Код backend и frontend | `src/Together.Api`, `src/Together.Client`, `src/Together.Core`, `src/Together.Contracts` |
+| Миграции БД | `src/Together.Api/Data/Migrations` и `database/migrations.sql` |
+| Docker-конфигурация | `Dockerfile`, `database/Dockerfile`, `docker-compose.yml`, `.env.example` |
+| Аутентификация и доступ | ASP.NET Core Identity, HttpOnly cookie, проверка владельца поездки |
+| API и примеры запросов | [backend_documentation.md](backend_documentation.md) |
+| Требования и архитектурное решение | [docs/backend_requirements.md](docs/backend_requirements.md) |
 | README и запуск | [README.md](README.md) |
-| Работающее приложение | Локальный запуск по инструкции выше; отдельный деплой не обязателен по условию |
-| Отчёт о разработке | [development_report.md](development_report.md) |
-| Техническое задание | [docs/technical_specification.md](docs/technical_specification.md) |
-| Все восемь шагов | [docs/homework_progress.md](docs/homework_progress.md) |
-| Примеры промптов | [docs/prompt_templates.md](docs/prompt_templates.md) |
-| Автоматические тесты | `tests/Together.Tests` и `tests/Together.BrowserTests` |
-| Скриншоты и результаты | [docs/evidence](docs/evidence/) |
-| package.json | [package.json](package.json); команды-обёртки, зависимости Blazor закреплены в `.csproj` и `packages.lock.json` |
+| Автоматические тесты | `tests/Together.Api.Tests`, `tests/Together.Tests`, `tests/Together.BrowserTests` |
+| Описание применения AI | [backend_documentation.md](backend_documentation.md#использование-ai) |
+
+## Локальный запуск
+
+```powershell
+Copy-Item .env.example .env
+# Заменить POSTGRES_PASSWORD в .env
+docker compose up --build
+```
+
+После применения миграции приложение должно быть доступно по адресу
+`http://localhost:8080`. Для production необходим HTTPS reverse proxy.
+
+## Текущий статус проверок
+
+- Release-сборка решения: успешно, без предупреждений.
+- Модульные и компонентные тесты: 32/32.
+- API-тесты: 4/4.
+- EF-модель соответствует миграции.
+- Docker/настоящий PostgreSQL и обновлённые браузерные end-to-end сценарии пока не
+  проверены: Docker отсутствует в рабочей среде.
+
+Перед окончательной сдачей нужно выполнить Compose-проверку, браузерные сценарии,
+развёртывание по HTTPS и указать фактические ссылки на GitHub и деплой.

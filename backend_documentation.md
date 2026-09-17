@@ -100,7 +100,8 @@ docker compose up --build
 ```
 
 Compose сначала ждёт PostgreSQL, запускает одноразовый контейнер миграции, затем
-приложение на `http://localhost:8080`. Volume `together-postgres` сохраняет БД.
+приложение на `http://localhost:8080`. Volume `together-postgres` сохраняет БД, а
+`together-data-protection` — ключи шифрования cookie между перезапусками.
 
 Запуск без Docker при доступном PostgreSQL:
 

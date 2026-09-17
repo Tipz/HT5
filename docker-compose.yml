@@ -30,6 +30,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Together: Host=database;Port=5432;Database=${POSTGRES_DB:-together};Username=${POSTGRES_USER:-together};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      DataProtection__KeysPath: /app/data-protection
     ports:
       - "${APP_PORT:-8080}:8080"
     depends_on:
@@ -41,6 +42,9 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+    volumes:
+      - together-data-protection:/app/data-protection
 
 volumes:
   together-postgres:
+  together-data-protection:

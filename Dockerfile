@@ -18,6 +18,8 @@ RUN dotnet publish src/Together.Client/Together.Client.csproj -c Release --no-re
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.10 AS final
 WORKDIR /app
 COPY --from=build /out/api .
+USER root
+RUN mkdir -p /app/data-protection && chown -R app:app /app/data-protection
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 USER app

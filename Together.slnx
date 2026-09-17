@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Together.Client/Together.Client.csproj" />
+    <Project Path="src/Together.Core/Together.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Together.BrowserTests/Together.BrowserTests.csproj" />
+    <Project Path="tests/Together.Tests/Together.Tests.csproj" />
+  </Folder>
+</Solution>

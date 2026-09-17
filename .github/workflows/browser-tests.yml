@@ -26,17 +26,17 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
           cache: true
           cache-dependency-path: '**/packages.lock.json'
 
-      - name: Restore locked dependencies
-        run: dotnet restore Together.slnx --locked-mode
+      - name: Restore dependencies
+        run: dotnet restore Together.slnx
 
       - name: Build
         run: dotnet build Together.slnx --configuration Release --no-restore
@@ -71,7 +71,7 @@ jobs:
 
       - name: Upload browser evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: browser-evidence
           path: |

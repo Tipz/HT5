@@ -156,6 +156,7 @@ public static class TripsEndpoints
         Apply(variant, request);
         AddExpenses(variant, request.Expenses);
         trip.Variants.Add(variant);
+        db.Variants.Add(variant);
         Touch(trip);
         var saved = await SaveTrip(db, trip, cancellationToken);
         return saved is Microsoft.AspNetCore.Http.HttpResults.Ok<TripResponse>

@@ -42,6 +42,9 @@ SQL-вариант — `database/migrations.sql`.
 в production приложение должно публиковаться только по HTTPS. Пароли обрабатывает
 Identity и они не попадают в логи.
 
+Переменная `SECURE_COOKIES` в Compose по умолчанию равна `true`. Отключать флаг
+можно только на изолированном HTTP-стенде; это не production-конфигурация.
+
 Каждый запрос поездки фильтруется одновременно по `id` и `OwnerId`. Для чужого id
 возвращается `404`, чтобы не раскрывать существование записи. Прикладных ролей нет.
 Изменяющие запросы с cookie защищены SameSite и CORS: сторонний origin не получает
@@ -131,17 +134,22 @@ docker compose exec -T database pg_dump -U together -d together -Fc > together.b
 
 ```text
 dotnet build Together.slnx -c Release              — успешно, 0 ошибок, 0 предупреждений
-dotnet test tests/Together.Api.Tests -c Release    — успешно, 4/4
+dotnet test Together.slnx -c Release               — успешно, API 4/4, Core/UI 32/32
 dotnet ef migrations has-pending-model-changes     — изменений модели нет
+docker compose up --build -d                       — успешно на Linux-ВМ, Compose 2.39.1
+GET /health/ready                                  — Healthy
+Playwright --backend-smoke                         — Chromium, успешно
 ```
 
-Docker отсутствует в текущей рабочей среде, поэтому `docker compose up`, применение
-миграции к настоящему PostgreSQL и production end-to-end сценарии пока не выполнены.
-Это ограничение нельзя считать успешной проверкой.
+На стенде подтверждены регистрация и cookie-вход, создание и чтение поездки,
+создание варианта с расходами `0` и `null`, конфликт revision, изоляция владельцев,
+выход и сохранение данных после перезагрузки страницы. HTTPS reverse proxy и
+публичный production-домен в рамках локальной проверки не разворачивались.
 
 ## Использование AI
 
 AI-ассистент помог сопоставить требования ДЗ № 5 с моделью ДЗ № 4, спроектировать
 нормализованную схему, сгенерировать и проверить EF-конфигурацию, API, обработку
 конфликтов, Docker-файлы и тесты. Результат проверялся компилятором, EF CLI и xUnit;
-неисполненные контейнерные и браузерные проверки явно отмечены выше.
+контейнерный сценарий дополнительно проверен на Linux-ВМ с настоящим PostgreSQL и
+Playwright Chromium.

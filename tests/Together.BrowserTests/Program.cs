@@ -18,6 +18,10 @@ if (args.Contains("--startup"))
 {
     return await StartupSmoke.RunAsync(playwright, baseUrl, evidence, args.Contains("--before-fix"));
 }
+if (args.Contains("--backend-smoke"))
+{
+    return await BackendSmoke.RunAsync(playwright, baseUrl, evidence);
+}
 if (args.Contains("--hot-reload"))
 {
     await using var browser = await playwright.Chromium.LaunchAsync(new()

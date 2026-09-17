@@ -17,6 +17,8 @@ docker compose up --build
 
 После успешной миграции приложение доступно на `http://localhost:8080`. Файл `.env`
 исключён из Git; секреты нельзя добавлять в `appsettings.json` или Blazor bundle.
+`SECURE_COOKIES=true` оставляйте для production и HTTPS. Значение `false` допустимо
+только для изолированного HTTP-стенда в локальной сети.
 
 Адаптивное приложение для сравнения семейных поездок по бюджету, дороге и удобствам для детей.
 Frontend создан в ДЗ № 4 по [исходному ТЗ](docs/technical_specification.md) и расширен backend в ДЗ № 5.
@@ -73,7 +75,7 @@ dotnet watch --project src/Together.Client
 
 ```powershell
 dotnet build Together.slnx -c Release
-dotnet test tests/Together.Tests -c Release
+dotnet test Together.slnx -c Release
 dotnet run --project tests/Together.BrowserTests -- --install
 ```
 
@@ -90,7 +92,9 @@ dotnet run --project tests/Together.BrowserTests
 Не запускайте несколько копий набора одновременно: они записывают одни и те же файлы отчёта.
 
 Результаты и скриншоты: [docs/evidence](docs/evidence/).
-Итог: 32 модульных/компонентных теста и 22 браузерных сценария прошли; Release-сборка и публикация успешны.
+Итог для ДЗ № 5: 32 модульных/компонентных и 4 API-теста прошли; Compose с
+PostgreSQL и отдельный backend smoke-сценарий Chromium проверены на Linux-ВМ.
+Существующие 22 браузерных сценария относятся к IndexedDB-версии ДЗ № 4.
 Описание проверок, найденных дефектов и ограничений: [development_report.md](development_report.md).
 
 Дополнительные команды в PowerShell:
@@ -103,6 +107,11 @@ Remove-Item Env:TEST_FILTER
 
 # Проверка CSS hot reload; в первом терминале должен работать dotnet watch:
 dotnet run --project tests/Together.BrowserTests -- --hot-reload
+
+# Сквозная проверка опубликованного backend/frontend стенда:
+$env:APP_URL = 'http://localhost:8080'
+dotnet run --project tests/Together.BrowserTests -- --backend-smoke
+Remove-Item Env:APP_URL
 ```
 
 ## Сборка для размещения

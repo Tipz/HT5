@@ -8,7 +8,7 @@ COPY src/Together.Contracts/Together.Contracts.csproj src/Together.Contracts/pac
 COPY src/Together.Client/Together.Client.csproj src/Together.Client/packages.lock.json src/Together.Client/
 COPY src/Together.Api/Together.Api.csproj src/Together.Api/packages.lock.json src/Together.Api/
 RUN dotnet restore src/Together.Api/Together.Api.csproj --locked-mode \
-    && dotnet restore src/Together.Client/Together.Client.csproj --locked-mode
+    && dotnet restore src/Together.Client/Together.Client.csproj --force-evaluate
 
 COPY src src
 RUN dotnet publish src/Together.Client/Together.Client.csproj -c Release --no-restore -o /out/client \

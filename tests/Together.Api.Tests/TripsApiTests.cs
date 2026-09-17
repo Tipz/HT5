@@ -33,6 +33,30 @@ public sealed class TripsApiTests(TogetherApiFactory factory) : IClassFixture<To
         Assert.NotNull(created);
         Assert.Equal(1, created.Revision);
 
+        var variantRequest = new VariantWriteRequest
+        {
+            ExpectedTripRevision = created.Revision,
+            Name = "Отель у моря",
+            Destination = "Сочи",
+            Accommodation = "Семейный номер",
+            SourceUrl = "https://example.test/hotel",
+            TravelMinutes = 120,
+            Transfers = 0,
+            Kitchen = "yes",
+            Crib = "unknown",
+            Playground = "no",
+            DistanceMeters = 500,
+            DistanceTarget = "море",
+            Expenses = [100_000, 0, null, 25_000, null, 5_000]
+        };
+        using var variantResponse = await owner.PostAsJsonAsync(
+            $"{ApiRoutes.Trips}/{created.Id}/variants", variantRequest);
+        Assert.Equal(HttpStatusCode.Created, variantResponse.StatusCode);
+        var withVariant = await variantResponse.Content.ReadFromJsonAsync<TripResponse>();
+        Assert.NotNull(withVariant);
+        Assert.Equal(2, withVariant.Revision);
+        Assert.Equal(variantRequest.Expenses, Assert.Single(withVariant.Variants).Expenses);
+
         using var conflictResponse = await owner.PutAsJsonAsync($"{ApiRoutes.Trips}/{created.Id}", request);
         Assert.Equal(HttpStatusCode.Conflict, conflictResponse.StatusCode);
 

@@ -4,6 +4,11 @@
 ASP.NET Core API и PostgreSQL. Реализованы регистрация, cookie-вход, изоляция поездок
 по владельцу, CRUD поездок и вариантов, optimistic concurrency и Docker Compose.
 
+## **Развёртывание готового образа.** Для запуска на другой инфраструктуре используйте
+[`docker-compose.deploy.yml`](docker-compose.deploy.yml): достаточно Docker Compose и файла
+`.env.deploy`, исходники и .NET SDK на целевом сервере не нужны. Пошаговые команды и
+параметры безопасности приведены в разделе [«Развёртывание готового образа»](#развёртывание-готового-образа).
+
 Архитектура, API и развёртывание описаны в [backend_documentation.md](backend_documentation.md),
 а требования ДЗ № 5 — в [docs/backend_requirements.md](docs/backend_requirements.md).
 
@@ -125,7 +130,7 @@ GitHub автоматически выполняет:
 ```bash
 cp deploy.env.example .env.deploy
 # PowerShell: Copy-Item deploy.env.example .env.deploy
-# Задайте POSTGRES_PASSWORD и выберите TOGETHER_IMAGE в .env.deploy
+# Обязательно замените POSTGRES_PASSWORD и выберите TOGETHER_IMAGE в .env.deploy
 docker compose --env-file .env.deploy --file docker-compose.deploy.yml up -d
 docker compose --env-file .env.deploy --file docker-compose.deploy.yml ps
 ```
@@ -135,11 +140,13 @@ Compose скачивает готовые образы приложения и P
 .NET SDK и локальная сборка на целевом сервере не нужны. Успешно завершившийся
 контейнер `migrate` со статусом `Exited (0)` — ожидаемое состояние.
 
-По умолчанию приложение доступно только на `http://127.0.0.1:8080`, что подходит
-для reverse proxy на том же хосте. Чтобы открыть порт в сети, явно установите
-`APP_BIND_ADDRESS=0.0.0.0`; для локального HTTP-стенда также задайте
-`SECURE_COOKIES=false`. В production оставляйте `SECURE_COOKIES=true` и завершайте
-TLS на HTTPS reverse proxy или ingress.
+Без переопределений `docker-compose.deploy.yml` публикует приложение только на
+`http://127.0.0.1:8080`, что подходит для reverse proxy на том же хосте. Значения из
+`.env.deploy` переопределяют эти настройки: перед запуском проверьте
+`APP_BIND_ADDRESS` и `SECURE_COOKIES`. Для прямого доступа из сети установите
+`APP_BIND_ADDRESS=0.0.0.0`; `SECURE_COOKIES=false` допустим только на изолированном
+HTTP-стенде. В production используйте `SECURE_COOKIES=true` и завершайте TLS на
+HTTPS reverse proxy или ingress.
 
 Образ содержит API и опубликованный Blazor-клиент, слушает внутренний HTTP-порт
 `8080` и работает от пользователя `app`. Compose настраивает:

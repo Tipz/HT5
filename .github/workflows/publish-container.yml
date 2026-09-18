@@ -71,6 +71,25 @@ jobs:
           provenance: mode=min
           sbom: true
 
+      - name: Smoke test published image with deployment Compose
+        shell: bash
+        env:
+          TOGETHER_IMAGE: ${{ steps.image.outputs.name }}@${{ steps.build.outputs.digest }}
+          POSTGRES_PASSWORD: ci-only-password
+          SECURE_COOKIES: 'false'
+        run: |
+          docker compose --file docker-compose.deploy.yml up --detach
+          for attempt in {1..90}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8080/health/ready > /dev/null; then
+              docker compose --file docker-compose.deploy.yml ps
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose --file docker-compose.deploy.yml ps
+          docker compose --file docker-compose.deploy.yml logs --no-color
+          exit 1
+
       - name: Add deployment details to summary
         shell: bash
         run: |
@@ -83,3 +102,9 @@ jobs:
             echo
             echo 'Digest: `${{ steps.build.outputs.digest }}`'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Stop deployment smoke stack
+        if: always()
+        env:
+          POSTGRES_PASSWORD: ci-only-password
+        run: docker compose --file docker-compose.deploy.yml down --volumes

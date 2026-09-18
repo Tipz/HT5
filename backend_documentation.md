@@ -217,13 +217,14 @@ GitHub Actions Publish container image             — GHCR, AMD64/ARM64, усп
 | --- | --- | --- |
 | `.github/workflows/ci.yml` | push и pull request в `master` | Restore, Release-сборка, xUnit/bUnit и API-тесты, TRX artifact |
 | `.github/workflows/browser-tests.yml` | push и pull request в `master` | Compose-стенд, миграция, PostgreSQL, Chromium backend smoke, evidence и логи |
-| `.github/workflows/publish-container.yml` | push в `master` и теги `v*` | Multi-platform image, OCI metadata, provenance, SBOM и Buildx cache |
+| `.github/workflows/publish-container.yml` | push в `master` и теги `v*` | Multi-platform image, OCI metadata, provenance, SBOM, Buildx cache и запуск опубликованного digest через deployment Compose |
 
 Публикация использует автоматически выдаваемый `GITHUB_TOKEN` только с правами
 `contents: read` и `packages: write`; персональный токен в репозитории не нужен.
-Backend workflow также выполняет `docker compose config --quiet` для
-`docker-compose.deploy.yml`, поэтому синтаксис ready-image конфигурации проверяется
-на каждом push и pull request.
+Backend workflow выполняет `docker compose config --quiet` для
+`docker-compose.deploy.yml` на каждом push и pull request. После публикации образа
+publish workflow дополнительно запускает этот Compose с точным digest, применяет
+миграцию и ждёт успешный `/health/ready`.
 
 ## Использование AI
 

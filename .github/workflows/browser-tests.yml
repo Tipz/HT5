@@ -41,6 +41,9 @@ jobs:
       - name: Build
         run: dotnet build Together.slnx --configuration Release --no-restore
 
+      - name: Validate ready-image Compose file
+        run: docker compose --file docker-compose.deploy.yml config --quiet
+
       - name: Install Playwright browsers
         shell: pwsh
         run: tests/Together.BrowserTests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium

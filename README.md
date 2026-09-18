@@ -119,22 +119,49 @@ GitHub автоматически выполняет:
 
 ## Развёртывание готового образа
 
+Для быстрого запуска без исходников и локальной сборки используйте отдельный
+[`docker-compose.deploy.yml`](docker-compose.deploy.yml):
+
 ```bash
-docker pull ghcr.io/tipz/ht5:latest
+cp deploy.env.example .env.deploy
+# PowerShell: Copy-Item deploy.env.example .env.deploy
+# Задайте POSTGRES_PASSWORD и выберите TOGETHER_IMAGE в .env.deploy
+docker compose --env-file .env.deploy --file docker-compose.deploy.yml up -d
+docker compose --env-file .env.deploy --file docker-compose.deploy.yml ps
 ```
 
-Образ содержит API и опубликованный Blazor-клиент, слушает HTTP-порт `8080` и
-работает от пользователя `app`. Для запуска требуются:
+Compose скачивает готовые образы приложения и PostgreSQL, ждёт готовности БД,
+однократно применяет миграции и только после этого запускает приложение. Исходники,
+.NET SDK и локальная сборка на целевом сервере не нужны. Успешно завершившийся
+контейнер `migrate` со статусом `Exited (0)` — ожидаемое состояние.
+
+По умолчанию приложение доступно только на `http://127.0.0.1:8080`, что подходит
+для reverse proxy на том же хосте. Чтобы открыть порт в сети, явно установите
+`APP_BIND_ADDRESS=0.0.0.0`; для локального HTTP-стенда также задайте
+`SECURE_COOKIES=false`. В production оставляйте `SECURE_COOKIES=true` и завершайте
+TLS на HTTPS reverse proxy или ingress.
+
+Образ содержит API и опубликованный Blazor-клиент, слушает внутренний HTTP-порт
+`8080` и работает от пользователя `app`. Compose настраивает:
 
 - `ConnectionStrings__Together` — строка подключения к PostgreSQL;
-- отдельный одноразовый запуск того же образа с аргументом `--migrate` до старта приложения;
-- постоянный volume для `/app/data-protection` и значение
-  `DataProtection__KeysPath=/app/data-protection`;
-- HTTPS reverse proxy и `Authentication__SecureCookies=true` в production.
+- отдельный одноразовый запуск образа с аргументом `--migrate`;
+- постоянные volumes `together-postgres` и `together-data-protection`;
+- read-only root filesystem приложения и временный `/tmp`.
 
 Проверки состояния: `/health` — доступность процесса, `/health/ready` — готовность
 с подключением к PostgreSQL. Пароли и строку подключения передавайте через secret
 store целевой инфраструктуры, а не через Docker build arguments или образ.
+
+Для обновления измените `TOGETHER_IMAGE` на новый `v*` или `sha-*` тег и повторите
+`up -d`. Остановка не удаляет данные:
+
+```bash
+docker compose --env-file .env.deploy --file docker-compose.deploy.yml down
+```
+
+Команда `down --volumes` удалит базу и ключи cookie без возможности восстановления;
+используйте её только при намеренном полном сбросе после резервного копирования.
 
 Workflow публикует:
 
@@ -159,6 +186,9 @@ Workflow публикует:
 | tests/Together.Tests | Модульные и компонентные тесты |
 | tests/Together.Api.Tests | Интеграционные тесты API и изоляции пользователей |
 | tests/Together.BrowserTests | Актуальный backend smoke и исторические IndexedDB-сценарии ДЗ № 4 |
+| docker-compose.yml | Локальная сборка и запуск из исходников |
+| docker-compose.deploy.yml | Быстрое развёртывание готовых образов приложения и PostgreSQL |
+| .github/workflows | CI, backend smoke и публикация multi-platform образа |
 | docs | Исходное ТЗ, концепции, план и доказательства проверок |
 
 Зависимости закреплены в .csproj и packages.lock.json.

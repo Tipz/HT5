@@ -10,7 +10,7 @@ ASP.NET Core Minimal API, данные — PostgreSQL через EF Core/Npgsql.
 | --- | --- |
 | Код backend и frontend | `src/Together.Api`, `src/Together.Client`, `src/Together.Core`, `src/Together.Contracts` |
 | Миграции БД | `src/Together.Api/Data/Migrations` и `database/migrations.sql` |
-| Docker-конфигурация | `Dockerfile`, `database/Dockerfile`, `docker-compose.yml`, `.env.example` |
+| Docker-конфигурация | Сборка из исходников: `docker-compose.yml`; быстрый запуск образа: `docker-compose.deploy.yml`, `deploy.env.example` |
 | GitHub Actions | `.github/workflows/ci.yml`, `.github/workflows/browser-tests.yml`, `.github/workflows/publish-container.yml` |
 | Готовый контейнер | `ghcr.io/tipz/ht5` для `linux/amd64` и `linux/arm64` |
 | Аутентификация и доступ | ASP.NET Core Identity, HttpOnly cookie, проверка владельца поездки |

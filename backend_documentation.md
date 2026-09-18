@@ -143,8 +143,21 @@ PostgreSQL. TLS завершается внешним reverse proxy или ingre
 Для получения образа без сборки исходников:
 
 ```bash
-docker pull ghcr.io/tipz/ht5:latest
+cp deploy.env.example .env.deploy
+# PowerShell: Copy-Item deploy.env.example .env.deploy
+# Заполнить POSTGRES_PASSWORD и выбрать неизменяемый TOGETHER_IMAGE.
+docker compose --env-file .env.deploy --file docker-compose.deploy.yml up -d
 ```
+
+`docker-compose.deploy.yml` использует официальный `postgres:17-alpine`, не
+публикует порт БД, применяет EF-миграции отдельным контейнером и хранит PostgreSQL
+и Data Protection в именованных volumes. Приложение по умолчанию привязано к
+`127.0.0.1:${APP_PORT:-8080}`; внешний доступ должен предоставлять reverse proxy.
+Для прямой публикации порта требуется осознанно задать `APP_BIND_ADDRESS=0.0.0.0`.
+
+При обновлении измените `TOGETHER_IMAGE` в `.env.deploy` на новый release- или
+SHA-тег и повторите `up -d`. Обычный `docker compose ... down` сохраняет volumes;
+вариант `down --volumes` безвозвратно удаляет БД и ключи cookie.
 
 Секреты нельзя передавать как Docker build arguments или сохранять в образе. Для
 приватной копии пакета целевой хост должен выполнить `docker login ghcr.io` с
@@ -208,6 +221,9 @@ GitHub Actions Publish container image             — GHCR, AMD64/ARM64, усп
 
 Публикация использует автоматически выдаваемый `GITHUB_TOKEN` только с правами
 `contents: read` и `packages: write`; персональный токен в репозитории не нужен.
+Backend workflow также выполняет `docker compose config --quiet` для
+`docker-compose.deploy.yml`, поэтому синтаксис ready-image конфигурации проверяется
+на каждом push и pull request.
 
 ## Использование AI
 
